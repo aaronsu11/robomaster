@@ -173,11 +173,11 @@ def fsm_task():
         fsm_reset_arm()
     elif fsm_status_num == 1:
         fsm_find_ball()
-    elif fsm_status_num == 2:
-        fsm_go_home()
     elif fsm_status_num == 3:
-        fsm_rotate_and_put_down()
+        fsm_go_home()
     elif fsm_status_num == 4:
+        fsm_rotate_and_put_down()
+    elif fsm_status_num == 2:
         fsm_grip_ball()
 
 
@@ -187,8 +187,8 @@ def fsm_reset_arm():
     yaw = sub_yaw
     chassis.move(z=-yaw).wait_for_completed()
     arm.moveto(x=90, y=60).wait_for_completed()
-    #arm.moveto(x=180, y=80).wait_for_completed()
-    # arm.moveto(x=190, y=-60).wait_for_completed()
+    arm.moveto(x=180, y=80).wait_for_completed()
+    arm.moveto(x=190, y=-60).wait_for_completed()
 
     gripper.open()
     time.sleep(2)
@@ -213,8 +213,8 @@ def fsm_find_ball():
         #     pid_angle.update(325, x_pos)
         #     xout = pid_x.output
         #     # move_with_wheel_speed(0, 0, -yout)
-        goal_x = 325
-        goal_y = 300
+        goal_x = 320
+        goal_y = 260
         pid_angle.update(goal_x, x_pos)
         pid_x.update(goal_y, y_pos)
         xout = pid_x.output
@@ -231,10 +231,10 @@ def fsm_find_ball():
         if calib_complete_success_times > 20:
             fsm_status_num += 1
             move_with_wheel_speed(0, 0, -0)
-            gripper.close()
+            gripper.open()
             time.sleep(2)
-            arm.moveto(x=180, y=80).wait_for_completed()
-            arm.moveto(x=90, y=60).wait_for_completed()
+            # arm.moveto(x=180, y=80).wait_for_completed()
+            # arm.moveto(x=90, y=60).wait_for_completed()
         move_with_wheel_speed(xout, 0, -yout)
     else:
         move_with_wheel_speed(0, 0, -0)
@@ -242,11 +242,14 @@ def fsm_find_ball():
 
 def fsm_grip_ball():
     global fsm_status_num
-    arm.moveto(x=90, y=60).wait_for_completed()
-    arm.moveto(x=200, y=10).wait_for_completed()
+    
+    # arm.moveto(x=200, y=-10).wait_for_completed()
     gripper.open()
     time.sleep(2)
-    fsm_status_num = 0
+    gripper.close()
+    time.sleep(2)
+    arm.moveto(x=90, y=60).wait_for_completed()
+    fsm_status_num += 1
 
 
 def fsm_go_home():
@@ -279,7 +282,13 @@ def fsm_rotate_and_put_down():
     # print(yaw)
     if -180 < yaw < -170 or 180 > yaw > 170:
         move_with_wheel_speed(0, 0, 0)
-        fsm_status_num += 1
+        arm.moveto(x=180, y=80).wait_for_completed()
+        arm.moveto(x=190, y=-60).wait_for_completed()
+        gripper.open()
+        time.sleep(2)
+        arm.moveto(x=180, y=80).wait_for_completed()
+        fsm_status_num = 0
+
 
 
 def hit_callback(sub_info):
@@ -295,7 +304,7 @@ if __name__ == '__main__':
     old2now_frame = MyTf()
     # EP_init
     # change this ip address to yours
-    robomaster.config.ROBOT_IP_STR = "192.168.0.108"
+    # robomaster.config.ROBOT_IP_STR = "192.168.0.108"
     ep_robot = robomaster.robot.Robot()
     # ep_robot.initialize(conn_type="rndis")
     ep_robot.initialize(conn_type='sta')
@@ -316,7 +325,7 @@ if __name__ == '__main__':
     find_ball_flag = False
 
     chassis.sub_attitude(50, sub_attitude_info_handler)
-    chassis.sub_position(50, sub_position_info_handler)
+    chassis.sub_position(0, 50, sub_position_info_handler)
     # 设置所有装甲灵敏度为 5
     ep_armor.set_hit_sensitivity(comp="all", sensitivity=5)
 
